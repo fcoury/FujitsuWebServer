@@ -8,6 +8,10 @@
 
 #include <SimpleDHT.h>
 
+// Send temperature interval
+const int REFRESH_INTERVAL = 60 * 1000; // ms
+int lastRefresh = 0;
+
 // ESP8266
 const int led = BUILTIN_LED;
 
@@ -70,6 +74,7 @@ void setup() {
   // HTTP Server
   server.on("/settemp", handleSetTemp);
   server.on("/gettemp", handleGetTemp);
+  server.on("/turnoff", handleTurnOff);  
   server.begin();
 
   // sends a ready blink
@@ -162,6 +167,17 @@ void handleSetTemp() {
   jsonOK();
 }
 
+void handleTurnOff() {
+  fujitsu.setCmd(FUJITSU_AC_CMD_TURN_OFF);
+  fujitsu.setSwing(FUJITSU_AC_SWING_OFF);
+  fujitsu.setMode(FUJITSU_AC_MODE_COOL);
+  fujitsu.setFanSpeed(FUJITSU_AC_FAN_HIGH);
+  fujitsu.send();
+
+  jsonOK();
+  
+}
+
 void handleGetTemp() {
   Serial.println("Sensing temperature...");
   byte temperature = 0;
@@ -195,4 +211,12 @@ void sendTemp() {
 void loop() {
   // HTTP server
   server.handleClient();
+
+  if (millis() - lastRefresh >= REFRESH_INTERVAL) {
+    Serial.println("Mill: " + String(millis()));
+    Serial.println("Last: " + String(lastRefresh));
+    Serial.println("Diff: " + String(millis() - lastRefresh));
+    lastRefresh = millis();
+    sendTemp();
+  }
 }
