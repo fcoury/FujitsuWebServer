@@ -75,8 +75,12 @@ void setup() {
 
   // HTTP Server
   server.on("/settemp", handleSetTemp);
+  server.on("/dectemp", handleDecTemp);
+  server.on("/inctemp", handleIncTemp);
   server.on("/gettemp", handleGetTemp);
-  server.on("/turnoff", handleTurnOff);  
+  server.on("/setfan",  handleSetFan);
+  server.on("/status",  handleGetStatus);
+  server.on("/turnoff", handleTurnOff);
   server.begin();
 
   // sends a ready blink
@@ -183,6 +187,11 @@ void decTemp() {
   sendAC(-1);
 }
 
+void setFanSpeed(int speed) {
+  currentFanSpeed = speed;
+  sendAC(-1);
+}
+
 void setTemp(int temp) {
   currentTemp = temp;
   sendAC(FUJITSU_AC_CMD_TURN_ON);
@@ -267,6 +276,33 @@ void handleDecTemp() {
   Serial.print("Decreasing current temperature: ");
   Serial.println(currentTemp);
   decTemp();
+}
+
+void handleSetFan() {
+  String speed = server.arg("speed");
+
+  if (speed == "") {
+    jsonError(422, "missing speed parameter");
+    return;
+  }
+  
+  if (speed == "high") {
+    setFanSpeed(FUJITSU_AC_FAN_HIGH);
+  } else if (speed == "med") {
+    setFanSpeed(FUJITSU_AC_FAN_MED);
+  } else if (speed == "low") {
+    setFanSpeed(FUJITSU_AC_FAN_LOW);
+  } else if (speed == "auto") {
+    setFanSpeed(FUJITSU_AC_FAN_AUTO);
+  } else if (speed == "quiet") {
+    setFanSpeed(FUJITSU_AC_FAN_QUIET);
+  } else {
+    jsonError(422, "invalid fan speed: " + speed); 
+  }
+}
+
+void handleGetStatus() {
+  sendACStatus();
 }
 
 void handleGetTemp() {
