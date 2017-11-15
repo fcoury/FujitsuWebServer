@@ -266,7 +266,7 @@ void handleIncTemp() {
 void handleDecTemp() {
   Serial.print("Decreasing current temperature: ");
   Serial.println(currentTemp);
-  incTemp();
+  decTemp();
 }
 
 void handleGetTemp() {
