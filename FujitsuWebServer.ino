@@ -18,6 +18,9 @@ const int led = BUILTIN_LED;
 // temp sensor
 const int pinDHT11 = D2;
 SimpleDHT11 dht11;
+byte currentRoomTemp = 0;
+byte currentRoomHumidity = 0;
+
 
 // AC
 IRFujitsuAC fujitsu(D0);
@@ -74,12 +77,15 @@ void setup() {
   } 
 
   // HTTP Server
+  server.on("/",        handleIndex);
   server.on("/settemp", handleSetTemp);
   server.on("/dectemp", handleDecTemp);
   server.on("/inctemp", handleIncTemp);
   server.on("/gettemp", handleGetTemp);
+  server.on("/nextfan", handleNextFan);
   server.on("/setfan",  handleSetFan);
   server.on("/status",  handleGetStatus);
+  server.on("/turnon",  handleTurnOn);
   server.on("/turnoff", handleTurnOff);
   server.begin();
 
@@ -114,7 +120,9 @@ void sendTemp() {
     Serial.print("Read DHT11 failed, err="); Serial.println(err);delay(1000);
     return;
   }
-  
+
+  currentRoomTemp = temperature;
+  currentRoomHumidity = humidity;
   send(temperature, humidity);
 }
 
@@ -187,6 +195,14 @@ void decTemp() {
   sendAC(-1);
 }
 
+void cycleFanSpeed() {
+  currentFanSpeed += 1;
+  if (currentFanSpeed > FUJITSU_AC_FAN_QUIET) {
+    currentFanSpeed = FUJITSU_AC_FAN_AUTO;
+  }
+  sendAC(-1);
+}
+
 void setFanSpeed(int speed) {
   currentFanSpeed = speed;
   sendAC(-1);
@@ -223,11 +239,60 @@ void sendAC(int command) {
   sendACStatus();
 }
 
+String getSwing() {
+  if (currentSwing == FUJITSU_AC_SWING_OFF) {
+    return "off";
+  } else if (currentSwing == FUJITSU_AC_SWING_VERT) {
+    return "vertical";
+  } else if (currentSwing == FUJITSU_AC_SWING_HORIZ) {
+    return "horizontal";
+  } else if (currentSwing == FUJITSU_AC_SWING_BOTH) {
+    return "both";
+  } else {
+    return "unknown";
+  }
+}
+
+String getMode() {
+  if (currentMode == FUJITSU_AC_MODE_AUTO) {
+    return "auto";
+  } else if (currentMode == FUJITSU_AC_MODE_COOL) {
+    return "cool";
+  } else if (currentMode == FUJITSU_AC_MODE_DRY) {
+    return "dry";
+  } else if (currentMode == FUJITSU_AC_MODE_FAN) {
+    return "fan";
+  } else if (currentMode == FUJITSU_AC_MODE_HEAT) {
+    return "heat";
+  } else {
+    return "unknown";
+  }  
+}
+
+String getFanSpeed() {
+  if (currentFanSpeed == FUJITSU_AC_FAN_AUTO) {
+    return "auto";
+  } else if (currentFanSpeed == FUJITSU_AC_FAN_HIGH) {
+    return "high";
+  } else if (currentFanSpeed == FUJITSU_AC_FAN_MED) {
+    return "med";
+  } else if (currentFanSpeed == FUJITSU_AC_FAN_LOW) {
+    return "low";
+  } else if (currentFanSpeed == FUJITSU_AC_FAN_QUIET) {
+    return "quiet";
+  } else {
+    return "unknown";
+  }  
+}
+
 void sendACStatus() {
   String data = "\"temperature\": " + String(currentTemp);
-  data += ", \"swing\": " + String(currentSwing);
-  data += ", \"mode\": " + String(currentMode);
-  data += ", \"fanSpeed\": " + String(currentFanSpeed);
+  data += ", \"swing\": \"" + getSwing() + "\"";
+  data += ", \"mode\": \"" + getMode() + "\"";
+  data += ", \"fanSpeed\": \"" + getFanSpeed() + "\"";
+  data += ", \"swingValue\": " + String(currentSwing);
+  data += ", \"modeValue\": " + String(currentMode);
+  data += ", \"fanSpeedValue\": " + String(currentFanSpeed);
 
   jsonData(data);
 }
@@ -249,12 +314,90 @@ void jsonData(String data) {
 
 void jsonOK() {
   server.send(200, "application/json", "{\"ok\": true}");
+  blink(200); 
+}
+
+void html(String body) {
+  server.send(200, "text/html", body);
   blink(200);
+}
+
+// --------------
+//  HTML helpers
+// --------------
+
+String rowDiv = "    <div class=\"row\" style=\"padding-bottom:1em\">\n";
+String endDiv = "    </div>\n";
+
+String addButton(int colSize, String label, String url) {
+  return  "<div class=\"col-xs-" + String(colSize) + "\" style=\"text-align: center\">\n" +
+          "    <button id=\"" + url + "\" type=\"button\" class=\"btn btn-default\" style=\"width: 100%\" onclick='makeAjaxCall(\"" + url + "\")'>" + label+ "</button>\n" +
+          "</div>\n";  
 }
 
 // ----------------------
 //  HTTP server handlers
 // ----------------------
+
+void handleIndex() {
+  String body = "<!DOCTYPE html>\n";
+  body += "<html>\n";
+  body += "  <head>\n";
+  body += "    <meta charset=\"utf-8\">\n";
+  body += "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n";
+  body += "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
+  body += "    <link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css\">\n";
+  body += "  </head>\n";
+  body += "  <body style='margin: 10px;'>\n";
+
+  body += "    <div id=\"status\" style=\"padding: 10px;\"></div>";
+
+  body += rowDiv;
+  body += addButton(6, "AC On", "turnon");
+  body += addButton(6, "AC Off", "turnoff");
+  body += endDiv;
+  
+  body += rowDiv;
+  body += addButton(4, "-", "dectemp");
+  body += addButton(4, "+", "inctemp");
+  body += addButton(4, "Fan", "nextfan");
+  body += endDiv;
+  
+  body += "    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js\"></script>\n";
+  body += "    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js\"></script>\n";
+
+  body += "<script>\n";
+  body += "  function addRow(data, label, key, unit) {\n";
+  body += "    if (!unit) { unit = ''; }\n";
+  body += "    return '<div class=\"row\">' +\n";
+  body += "      '<div class=\"col-xs-6\" style=\"text-align: right;\">' + label + ':</div>' +\n";
+  body += "      '<div class=\"col-xs-6\"><b>' + data[key] + unit + '</b></div>' +\n";
+  body += "      '</div>';\n";
+  body += "  }\n";
+  body += "  \n";
+  body += "  function makeAjaxCall(url) {\n";
+  body += "    var html = '';\n";
+  body += "    $.getJSON('gettemp').done(function(tempData) {\n";
+  body += "      html += addRow(tempData, 'Room Temp', 'temperature', '<sup>o</sup>C');\n";
+  body += "      html += addRow(tempData, 'Room Humidity', 'humidity', '%');\n";
+  body += "      $.getJSON(url).done(function(data) {\n";
+  body += "        html += addRow(data, 'Mode', 'mode');\n";
+  body += "        html += addRow(data, 'Temperature', 'temperature', '<sup>o</sup>C');\n";
+  body += "        html += addRow(data, 'Swing', 'swing');\n";
+  body += "        html += addRow(data, 'Fan', 'fanSpeed');\n";
+  body += "        \n";
+  body += "        $('#status').html(html);\n";
+  body += "      });\n";
+  body += "    });\n";
+  body += "  }\n";
+  body += "  makeAjaxCall('status');\n";
+  body += "</script>\n";
+    
+  body += "  </body>\n";
+  body += "</html>\n";
+
+  html(body);
+}
 
 void handleSetTemp() {
   String temperature = server.arg("temperature");
@@ -320,8 +463,16 @@ void handleGetTemp() {
   jsonData("\"temperature\":" + String(temperature) + ", \"humidity\":" + String(humidity));
 }
 
+void handleTurnOn() {
+  sendAC(FUJITSU_AC_CMD_TURN_ON);
+}
+
 void handleTurnOff() {
   sendAC(FUJITSU_AC_CMD_TURN_OFF);
+}
+
+void handleNextFan() {
+  cycleFanSpeed();
 }
 
 
