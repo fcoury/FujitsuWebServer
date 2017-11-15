@@ -21,6 +21,10 @@ SimpleDHT11 dht11;
 
 // AC
 IRFujitsuAC fujitsu(D0);
+int currentTemp = 18;
+int currentSwing = FUJITSU_AC_SWING_OFF;
+int currentMode = FUJITSU_AC_MODE_COOL;
+int currentFanSpeed = FUJITSU_AC_FAN_HIGH;
 
 // WiFi
 const char* ssid = "Biscayne2";
@@ -35,11 +39,9 @@ const int httpsPort = 443;
 
 WiFiClientSecure client;
 
-void blink(int pause) {
-  digitalWrite(led, 0);
-  delay(pause);
-  digitalWrite(led, 1);
-}
+// ----------------------------
+//  Main code - setup and loop
+// ----------------------------
 
 void setup() {
   // Serial setup
@@ -79,8 +81,39 @@ void setup() {
 
   // sends a ready blink
   delay(200);
-  blink(500);
+  blink(100);
 }
+
+void loop() {
+  // HTTP server
+  server.handleClient();
+
+  if (millis() - lastRefresh >= REFRESH_INTERVAL) {
+    lastRefresh = millis();
+    sendTemp();
+  }
+}
+
+
+void blink(int pause) {
+  digitalWrite(led, 0);
+  delay(pause);
+  digitalWrite(led, 1);
+}
+
+void sendTemp() {
+  // read without samples.
+  byte temperature = 0;
+  byte humidity = 0;
+  int err = SimpleDHTErrSuccess;
+  if ((err = dht11.read(pinDHT11, &temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
+    Serial.print("Read DHT11 failed, err="); Serial.println(err);delay(1000);
+    return;
+  }
+  
+  send(temperature, humidity);
+}
+
 
 void send(byte temperature, byte humidity) {
   if (!client.connect(host, httpsPort)) {
@@ -127,28 +160,92 @@ void send(byte temperature, byte humidity) {
   Serial.println(line);
   Serial.println("==========");
   Serial.println("closing connection");
-  blink(1000);
+  blink(200);
+}
+
+// ------------
+//  AC helpers
+// ------------
+
+void incTemp() {
+  currentTemp += 1;
+  if (currentTemp > 24) {
+    currentTemp = 24;
+  }
+  sendAC(-1);
+}
+
+void decTemp() {
+  currentTemp -= 1;
+  if (currentTemp < 18) {
+    currentTemp = 18;
+  }
+  sendAC(-1);
+}
+
+void setTemp(int temp) {
+  currentTemp = temp;
+  sendAC(FUJITSU_AC_CMD_TURN_ON);
+}
+
+void sendAC(int command) {
+  Serial.println("Sending AC command");
+  
+  if (command > -1) {
+    Serial.print("command: ");
+    Serial.print(command);
+    Serial.print(" | ");
+    fujitsu.setCmd(command);
+  }
+  Serial.print("swing: ");
+  Serial.print(currentSwing);
+  fujitsu.setSwing(currentSwing);
+  Serial.print(" | mode: ");
+  Serial.print(currentMode);
+  fujitsu.setMode(currentMode);
+  Serial.print(" | fanSpeed: ");
+  Serial.print(currentFanSpeed);
+  fujitsu.setFanSpeed(currentFanSpeed);
+  Serial.print(" | temperature: ");
+  Serial.println(currentTemp);
+  fujitsu.setTemp(currentTemp);
+  fujitsu.send();
+
+  sendACStatus();
+}
+
+void sendACStatus() {
+  String data = "\"temperature\": " + String(currentTemp);
+  data += ", \"swing\": " + String(currentSwing);
+  data += ", \"mode\": " + String(currentMode);
+  data += ", \"fanSpeed\": " + String(currentFanSpeed);
+
+  jsonData(data);
+}
+
+// ---------------------
+//  HTTP server helpers
+// ---------------------
+
+void jsonError(int code, String error) {
+  server.send(code, "application/json", "{\"ok\": false, \"error\": \"" + error + "\"}");
+  blink(200);
+  blink(200);
+}
+
+void jsonData(String data) {
+  server.send(200, "application/json", "{\"ok\": true, " + data + "}");
+  blink(200);
+}
+
+void jsonOK() {
+  server.send(200, "application/json", "{\"ok\": true}");
+  blink(200);
 }
 
 // ----------------------
 //  HTTP server handlers
 // ----------------------
-
-void jsonError(int code, String error) {
-  server.send(code, "application/json", "{\"ok\": false, \"error\": \"" + error + "\"}");
-  blink(500);
-  blink(500);
-}
-
-void jsonData(String data) {
-  server.send(200, "application/json", "{\"ok\": false, " + data + "}");
-  blink(1000);
-}
-
-void jsonOK() {
-  server.send(200, "application/json", "{\"ok\": true}");
-  blink(1000);
-}
 
 void handleSetTemp() {
   String temperature = server.arg("temperature");
@@ -157,25 +254,19 @@ void handleSetTemp() {
     return;
   }
 
-  fujitsu.setCmd(FUJITSU_AC_CMD_TURN_ON);
-  fujitsu.setSwing(FUJITSU_AC_SWING_OFF);
-  fujitsu.setMode(FUJITSU_AC_MODE_COOL);
-  fujitsu.setFanSpeed(FUJITSU_AC_FAN_HIGH);
-  fujitsu.setTemp(temperature.toInt());
-  fujitsu.send();
-
-  jsonOK();
+  setTemp(temperature.toInt());
 }
 
-void handleTurnOff() {
-  fujitsu.setCmd(FUJITSU_AC_CMD_TURN_OFF);
-  fujitsu.setSwing(FUJITSU_AC_SWING_OFF);
-  fujitsu.setMode(FUJITSU_AC_MODE_COOL);
-  fujitsu.setFanSpeed(FUJITSU_AC_FAN_HIGH);
-  fujitsu.send();
+void handleIncTemp() {
+  Serial.print("Increasing current temperature: ");
+  Serial.println(currentTemp);
+  incTemp();
+}
 
-  jsonOK();
-  
+void handleDecTemp() {
+  Serial.print("Decreasing current temperature: ");
+  Serial.println(currentTemp);
+  incTemp();
 }
 
 void handleGetTemp() {
@@ -193,30 +284,8 @@ void handleGetTemp() {
   jsonData("\"temperature\":" + String(temperature) + ", \"humidity\":" + String(humidity));
 }
 
-void sendTemp() {
-  // read without samples.
-  Serial.println("Sample DHT11...");
-  byte temperature = 0;
-  byte humidity = 0;
-  int err = SimpleDHTErrSuccess;
-  if ((err = dht11.read(pinDHT11, &temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
-    Serial.print("Read DHT11 failed, err="); Serial.println(err);delay(1000);
-    return;
-  }
-  
-  send(temperature, humidity);
+void handleTurnOff() {
+  sendAC(FUJITSU_AC_CMD_TURN_OFF);
 }
 
 
-void loop() {
-  // HTTP server
-  server.handleClient();
-
-  if (millis() - lastRefresh >= REFRESH_INTERVAL) {
-    Serial.println("Mill: " + String(millis()));
-    Serial.println("Last: " + String(lastRefresh));
-    Serial.println("Diff: " + String(millis() - lastRefresh));
-    lastRefresh = millis();
-    sendTemp();
-  }
-}
