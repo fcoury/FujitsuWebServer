@@ -73,7 +73,7 @@ void setup() {
 
   if (MDNS.begin("esp8266")) {
     Serial.println("MDNS Responder Started");
-  } 
+  }
 
   // HTTP Server
   server.on("/",        handleIndex);
@@ -112,7 +112,6 @@ void blink(int pause) {
 }
 
 void sendTemp() {
-  // read without samples.
   byte temperature = 0;
   byte humidity = 0;
   int err = SimpleDHTErrSuccess;
@@ -145,7 +144,7 @@ void send(byte temperature, byte humidity) {
              "Content-Type: application/json\r\n" +
              "Content-Length: " + data.length() + "\r\n" +
              "Connection: close\r\n\r\n" + data + "\r\n";
-               
+
   Serial.print("Data: ");
   Serial.println(data);
 
@@ -215,7 +214,7 @@ void setTemp(int temp) {
 
 void sendAC(int command) {
   Serial.println("Sending AC command");
-  
+
   if (command > -1) {
     Serial.print("command: ");
     Serial.print(command);
@@ -266,7 +265,7 @@ String getMode() {
     return "heat";
   } else {
     return "unknown";
-  }  
+  }
 }
 
 String getFanSpeed() {
@@ -282,7 +281,7 @@ String getFanSpeed() {
     return "quiet";
   } else {
     return "unknown";
-  }  
+  }
 }
 
 void sendACStatus() {
@@ -314,7 +313,7 @@ void jsonData(String data) {
 
 void jsonOK() {
   server.send(200, "application/json", "{\"ok\": true}");
-  blink(200); 
+  blink(200);
 }
 
 void html(String body) {
@@ -332,7 +331,7 @@ String endDiv = "    </div>\n";
 String addButton(int colSize, String label, String url) {
   return  "<div class=\"col-xs-" + String(colSize) + "\" style=\"text-align: center\">\n" +
           "    <button id=\"" + url + "\" type=\"button\" class=\"btn btn-default\" style=\"width: 100%\" onclick='makeAjaxCall(\"" + url + "\")'>" + label+ "</button>\n" +
-          "</div>\n";  
+          "</div>\n";
 }
 
 // ----------------------
@@ -356,13 +355,13 @@ void handleIndex() {
   body += addButton(6, "AC On", "turnon");
   body += addButton(6, "AC Off", "turnoff");
   body += endDiv;
-  
+
   body += rowDiv;
   body += addButton(4, "-", "dectemp");
   body += addButton(4, "+", "inctemp");
   body += addButton(4, "Fan", "nextfan");
   body += endDiv;
-  
+
   body += "    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js\"></script>\n";
   body += "    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js\"></script>\n";
 
@@ -392,7 +391,7 @@ void handleIndex() {
   body += "  }\n";
   body += "  makeAjaxCall('status');\n";
   body += "</script>\n";
-    
+
   body += "  </body>\n";
   body += "</html>\n";
 
@@ -433,7 +432,7 @@ void handleSetFan() {
     jsonError(422, "missing speed parameter");
     return;
   }
-  
+
   if (speed == "high") {
     setFanSpeed(FUJITSU_AC_FAN_HIGH);
   } else if (speed == "med") {
@@ -445,7 +444,7 @@ void handleSetFan() {
   } else if (speed == "quiet") {
     setFanSpeed(FUJITSU_AC_FAN_QUIET);
   } else {
-    jsonError(422, "invalid fan speed: " + speed); 
+    jsonError(422, "invalid fan speed: " + speed);
   }
 }
 

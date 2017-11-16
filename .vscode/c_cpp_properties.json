@@ -1,0 +1,51 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "/Users/fcoury/Documents/Arduino/libraries/SimpleDHT",
+                "/Users/fcoury/Documents/Arduino/libraries/IRremoteESP8266/src",
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino/",
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/EEPROM/",
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/SPI/",
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/SoftwareSerial/",
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/Wire/",
+                "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/avr/include/",
+                "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/avr/include/avr/",
+                "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/avr/include/compat/",
+                "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/avr/include/util/",
+                "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/lib/gcc/avr/4.*.*/include/",
+                "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/lib/gcc/avr/4.*.*/include-fixed/",
+                "/Applications/Arduino.app/Contents/Java/libraries/WiFi/src",
+                "/Applications/Arduino.app/Contents/Java/libraries/",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries/ESP8266AVRISP/src",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries/ESP8266HTTPClient/src",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries/ESP8266httpUpdate/src",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries/ESP8266HTTPUpdateServer/src",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries/ESP8266mDNS",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries/ESP8266SSDP",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries/ESP8266WebServer/src",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries/ESP8266WiFi/src",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries/ESP8266WiFiMesh/src",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/cores/esp8266",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/tools/sdk/include",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/variants/ESPDuino/",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/tools/xtensa-lx106-elf-gcc/1.20.0-26-gb404fb9-2/xtensa-lx106-elf/include/c++/4.8.2/xtensa-lx106-elf/",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/tools/xtensa-lx106-elf-gcc/1.20.0-26-gb404fb9-2/lib/gcc/xtensa-lx106-elf/4.8.2/include",
+                "/Users/fcoury/Library/Arduino15/packages/esp8266/tools/xtensa-lx106-elf-gcc/1.20.0-26-gb404fb9-2/xtensa-lx106-elf/include/c++/4.8.2"
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": false,
+                "path": [
+                    "/Users/fcoury/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/cores/esp8266"
+                ]
+            },
+            "intelliSenseMode": "clang-x64",
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ]
+        }
+    ],
+    "version": 3
+}
