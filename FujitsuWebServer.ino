@@ -21,7 +21,6 @@ SimpleDHT11 dht11;
 byte currentRoomTemp = 0;
 byte currentRoomHumidity = 0;
 
-
 // AC
 IRFujitsuAC fujitsu(D0);
 int currentTemp = 18;
@@ -82,6 +81,7 @@ void setup() {
   server.on("/dectemp", handleDecTemp);
   server.on("/inctemp", handleIncTemp);
   server.on("/gettemp", handleGetTemp);
+  server.on("/curtemp", handleCurrTemp);
   server.on("/nextfan", handleNextFan);
   server.on("/setfan",  handleSetFan);
   server.on("/status",  handleGetStatus);
@@ -377,7 +377,7 @@ void handleIndex() {
   body += "  \n";
   body += "  function makeAjaxCall(url) {\n";
   body += "    var html = '';\n";
-  body += "    $.getJSON('gettemp').done(function(tempData) {\n";
+  body += "    $.getJSON('curtemp').done(function(tempData) {\n";
   body += "      html += addRow(tempData, 'Room Temp', 'temperature', '<sup>o</sup>C');\n";
   body += "      html += addRow(tempData, 'Room Humidity', 'humidity', '%');\n";
   body += "      $.getJSON(url).done(function(data) {\n";
@@ -397,6 +397,11 @@ void handleIndex() {
   body += "</html>\n";
 
   html(body);
+}
+
+void handleCurrTemp() {
+  String data = "\"temperature\":" + String(currentRoomTemp) + ",\"humidity\":" + String(currentRoomHumidity);
+  jsonData(data);
 }
 
 void handleSetTemp() {
@@ -449,7 +454,6 @@ void handleGetStatus() {
 }
 
 void handleGetTemp() {
-  Serial.println("Sensing temperature...");
   byte temperature = 0;
   byte humidity = 0;
   int err = SimpleDHTErrSuccess;
